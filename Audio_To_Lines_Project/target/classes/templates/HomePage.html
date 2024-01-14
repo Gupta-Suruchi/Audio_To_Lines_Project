@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
+    <title>File Upload and Text Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #textPane, #textEditor {
+            width: 100%;
+            height: 200px;
+            overflow: auto;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            padding: 10px;
+        }
+
+        #sendButton, #sendBtn, #copyeditor,#copypane, #pasteFromClipboardBtn {
+            cursor: pointer;
+            background-color: steelblue;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .paste:hover{
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            display: inline-block;
+        }
+
+        #emailInput {
+            width: 15%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        #mainheading{
+            background-color: steelblue;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+            font: italic 1.2rem "Fira Sans", serif;
+            font-size: 70px;
+        }
+        #secondheading{
+            color: steelblue;
+            border: 1px cornflowerblue;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: left;
+            text-decoration: none;
+            font: italic 1.2rem "Fira Sans", serif;
+            font-size: 50px;
+        }
+        input[type=file]::file-selector-button {
+            margin-right: 20px;
+            border: none;
+            background: steelblue;
+            padding: 10px 10px;
+            border-radius: 10px;
+            color: #fff;
+            margin-bottom: 30px;
+            font:  1.2rem "Fira Sans", serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background .2s ease-in-out;
+
+        }
+
+        input[type=file]::file-selector-button:hover {
+            background: #0d45a5;
+        }
+        .label{
+            color: steelblue;
+            border: 1px cornflowerblue;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+            font: italic 1.2rem "Fira Sans", serif;
+            font-size: 20px;
+        }
+        .file{
+            color: black;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: left;
+            text-decoration: none;
+            font: italic 1.2rem "Fira Sans", serif;
+            font-size: 10px;
+        }
+        .fileupload{
+            color: steelblue;
+            padding: 5px;
+            margin-top: 5px;
+            margin-left: 50px;
+            text-align: right;
+            text-decoration: none;
+            font: italic 1.2rem "Fira Sans", serif;
+            font-size: 14px;
+            border-radius: 3px;
+
+        }
+
+    </style>
+</head>
+<body>
+<h1 id="mainheading">Easy Transcribe Audio files </h1>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+<label class="label">Add Audio/Video </label> <input name="file" class ="file" type="file" id="fileInput" accept="audio/*" >
+<button class ="fileupload" title="upload file" id="upload" ><i class='fa fa-upload'></i></button>
+</form>
+<div id="textPane" th:if="${transcription}">
+    <!-- Text pane content goes here -->
+    <p th:text="${transcription}"></p>
+</div>
+
+<button id="copypane" class ="paste" title="copy" onclick="copyToClipboard('textPane')"><i class='fa fa-copy'></i>
+</button>
+<h3 id="secondheading">Edit Transcribed file in hand & share on email </h3>
+
+<form th:action="@{/sendMail}" method="post">
+    <input type="hidden" name="editorText" id="editorText" th:value="${editorText}">
+
+    <div id="textEditor" name="editorText" contenteditable="true"></div>
+    <input type="text" id="emailInput" name="email" placeholder="Share Transcribe to Email">
+    <button class="paste" title="send email" id="sendBtn"><i class='fa fa-send-o' onclick="updateEditorText()"></i></button>
+    <div class="Email" th:if="${Email != null}">
+        <label> [[${Email}]]</label>
+    </div>
+</form>
+<button class="paste" id="sendButton" title="save" onclick="updateEditorText()"><i class='fa fa-save'></i></button>
+
+<button class="paste" id="copyeditor" title="copy" onclick="copyToClipboard('textEditor')"><i class='fa fa-copy'></i></button>
+<button class="paste" title="paste" id="pasteFromClipboardBtn" onclick="pasteFromClipboard('textEditor')"><i class='fa fa-paste'></i></button>
+
+
+
+<script>
+    function updateEditorText() {
+        var textEditorContent = document.getElementById('textEditor').innerText;
+        document.getElementById('editorText').value = textEditorContent;
+    }
+</script>
+
+<script>
+
+    async function copyToClipboard(elementId) {
+        try {
+            var copyElement = document.getElementById(elementId);
+            var range = document.createRange();
+            range.selectNodeContents(copyElement);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            await navigator.clipboard.writeText(selection.toString());
+            console.log('Text successfully copied to clipboard');
+            //alert("Copied to clipboard: " + selection.toString());
+            selection.removeAllRanges();
+        } catch (err) {
+            console.error('Unable to copy text to clipboard', err);
+        }
+    }
+
+    async function pasteFromClipboard(elementId) {
+        try {
+            var pasteElement = document.getElementById(elementId);
+            var text = await navigator.clipboard.readText();
+            var selection = window.getSelection();
+            var range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(text));
+            console.log('Text successfully pasted from clipboard:', text);
+        } catch (err) {
+            console.error('Unable to paste text from clipboard', err);
+        }
+    }
+
+
+
+
+</script>
+
+</body>
+</html>
